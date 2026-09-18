@@ -1,0 +1,119 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Vietnamese & Global Typography Standard */
+  font-family: "Be Vietnam Pro", Inter, Roboto, "Segoe UI", Arial, sans-serif;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  --army-black: #130102;
+  --army-dark: #290102;
+  --army-maroon: #410202;
+  --army-red-dark: #580202;
+  --army-red: #730203;
+  --army-red-light: #900302;
+
+  --army-gold: #D99C2B;
+  --army-gold-soft: #C99E30;
+  --army-gold-light: #F0C65A;
+
+  --army-ivory: #E0DACD;
+  --army-white: #F8F4EA;
+
+  --army-muted: #B7AAA2;
+}
+
+html {
+  font-family: "Be Vietnam Pro", Inter, Roboto, "Segoe UI", Arial, sans-serif;
+}
+
+body {
+  font-family: inherit;
+  color: var(--army-white);
+  background-color: var(--army-black);
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+/* Form Controls - Guarantee Font & Typography Inheritance */
+button,
+input,
+textarea,
+select {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  letter-spacing: inherit;
+}
+
+/* Headings Safe Line-Height & Diacritic Room */
+h1, h2, h3, h4, h5, h6 {
+  line-height: 1.25;
+  text-wrap: balance;
+}
+
+/* Gradients */
+.bg-hero-gradient {
+  background: linear-gradient(180deg, #130102 0%, #410202 35%, #730203 100%);
+}
+
+.bg-dark-section {
+  background: linear-gradient(180deg, #130102 0%, #290102 100%);
+}
+
+.bg-red-section {
+  background: linear-gradient(135deg, #410202 0%, #730203 100%);
+}
+
+.bg-hero-radial {
+  background: radial-gradient(circle at center, rgba(144, 3, 2, 0.45) 0%, rgba(19, 1, 2, 0.96) 80%);
+}
+
+/* Subtle Vignette Overlay */
+.vignette-overlay {
+  box-shadow: inset 0 0 100px rgba(19, 1, 2, 0.85);
+}
+
+/* Archival / Military Gold Border */
+.border-gold-subtle {
+  border-color: rgba(217, 156, 43, 0.25);
+}
+
+.border-gold-glow {
+  border-color: rgba(217, 156, 43, 0.6);
+  box-shadow: 0 0 12px rgba(217, 156, 43, 0.25);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #130102;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #410202;
+  border: 1px solid rgba(217, 156, 43, 0.3);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #730203;
+  border-color: #D99C2B;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
