@@ -1,8 +1,45 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Award, BookOpen, Compass, ShieldCheck } from 'lucide-react';
 import Container from '../common/Container';
+import eraService from '../../services/eraService';
 
-export function HistoryIntro() {
+export function HistoryIntro({ eras: propEras, milestones = [] }) {
+  const [eras, setEras] = useState(propEras || []);
+
+  useEffect(() => {
+    if (propEras && propEras.length > 0) {
+      setEras(propEras);
+      return;
+    }
+
+    let isMounted = true;
+    eraService.getEras().then((data) => {
+      if (isMounted && Array.isArray(data) && data.length > 0) {
+        setEras(data);
+      }
+    });
+
+    const handleEraUpdate = (event) => {
+      if (isMounted && Array.isArray(event.detail)) {
+        setEras(event.detail);
+      }
+    };
+
+    window.addEventListener('era-updated', handleEraUpdate);
+    return () => {
+      isMounted = false;
+      window.removeEventListener('era-updated', handleEraUpdate);
+    };
+  }, [propEras]);
+
+  const eraCount = eras?.length || 0;
+  const eraBadge = eraCount > 0 ? String(eraCount).padStart(2, '0') : '04';
+  const startYear = eras[0]?.startYear
+    ? String(eras[0].startYear)
+    : milestones[0]?.year
+    ? String(milestones[0].year)
+    : '1951';
+
   return (
     <section id="history-intro" className="py-20 bg-dark-section relative border-b border-army-gold/20">
       <Container>
@@ -27,18 +64,18 @@ export function HistoryIntro() {
             </p>
           </div>
 
-          {/* 4 Pillars / Metrics (Using placeholders as per AGENTS.md rule 7) */}
+          {/* 4 Pillars / Metrics */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 pt-4 border-t border-army-gold/15">
             {[
               {
                 icon: Award,
-                badge: '1951',
+                badge: startYear,
                 label: 'Khởi nguồn vẻ vang',
                 desc: 'Đặt nền móng đào tạo lý luận chính trị quân sự',
               },
               {
                 icon: Compass,
-                badge: '04',
+                badge: eraBadge,
                 label: 'Giai đoạn lịch sử',
                 desc: 'Phát triển liên tục theo các mốc cách mạng trọng đại',
               },

@@ -45,6 +45,18 @@ export const validateMilestoneList = (allowPublished = false) => (req, _res, nex
 
 const validateMilestoneBody = (partial) => (req, _res, next) => {
   const body = req.body;
+  if (body && typeof body === "object" && !Array.isArray(body)) {
+    if (typeof body.year === "string" && /^\d+$/.test(body.year.trim())) {
+      body.year = parseInt(body.year.trim(), 10);
+    }
+    if (body.date === "") {
+      body.date = null;
+    }
+    if (body.coverImage && typeof body.coverImage === "object" && !body.coverImage.url) {
+      body.coverImage = null;
+    }
+  }
+
   const errors = [];
   if (!validateBodyShape(body, ALLOWED_FIELDS, ["year", "title", "slug"], partial, errors)) {
     return next(validationError(errors));

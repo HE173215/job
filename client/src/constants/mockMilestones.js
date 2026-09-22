@@ -37,40 +37,9 @@ const createArchivalPlaceholderSvg = (title, year) => {
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 };
 
-export const MOCK_ERAS = [
-  {
-    id: "giai-doan-1",
-    name: "Giai đoạn I",
-    timeframe: "19XX – 19XX",
-    title: "Giai đoạn Thành lập & Kháng chiến [Dữ liệu mẫu]",
-    description: "Thời kỳ mở đầu trang sử vẻ vang, đặt nền móng công tác tư tưởng và đào tạo cán bộ chính trị quân đội nhân dân.",
-    quote: "Giữ vững định hướng chính trị trong mọi thử thách cam go.",
-  },
-  {
-    id: "giai-doan-2",
-    name: "Giai đoạn II",
-    timeframe: "19XX – 19XX",
-    title: "Kháng chiến & Thống nhất đất nước [Dữ liệu mẫu]",
-    description: "Chi viện chiến trường, bồi dưỡng hàng vạn cán bộ chính trị đáp ứng yêu cầu giải phóng miền Nam thống nhất non sông.",
-    quote: "Mỗi cán bộ chính trị là một ngọn cờ dẫn dắt tinh thần bộ đội.",
-  },
-  {
-    id: "giai-doan-3",
-    name: "Giai đoạn III",
-    timeframe: "19XX – 20XX",
-    title: "Xây dựng hòa bình & Đổi mới [Dữ liệu mẫu]",
-    description: "Chuyển mình mạnh mẽ trong sự nghiệp xây dựng quân đội chính quy, hiện đại hóa giáo trình đào tạo và nghiên cứu khoa học lý luận.",
-    quote: "Đổi mới tư duy, nâng cao chất lượng đào tạo vì Tổ quốc.",
-  },
-  {
-    id: "giai-doan-4",
-    name: "Giai đoạn IV",
-    timeframe: "20XX – Nay",
-    title: "Hội nhập & Phát triển vững chắc [Dữ liệu mẫu]",
-    description: "Nhà trường mẫu mực, chuẩn mực, đào tạo đội ngũ cán bộ chính trị tinh nhuệ, trung thành tuyệt đối với Đảng và Tổ quốc.",
-    quote: "Trung thành vô hạn, dạy tốt học tốt, mẫu mực chính quy.",
-  },
-];
+import { OFFICIAL_ERAS } from './eraConstants';
+
+export const MOCK_ERAS = OFFICIAL_ERAS;
 
 export const MOCK_MILESTONES = [
   {

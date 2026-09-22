@@ -4,11 +4,14 @@ import Container from '../common/Container';
 import SectionTitle from '../common/SectionTitle';
 import Button from '../common/Button';
 import EmptyState from '../common/EmptyState';
+import { compareMilestonesChronological } from '../../constants/eraConstants';
 
 export function FeaturedHistory({ milestones = [] }) {
-  // Ưu tiên các mốc được đánh dấu featured, nếu không lấy 4 mốc đầu
+  // Ưu tiên các mốc được đánh dấu featured, sắp xếp theo năm từ trước đến nay
   const featured = milestones.filter((m) => m.featured);
-  const featuredItems = (featured.length > 0 ? featured : milestones).slice(0, 4);
+  const candidateItems = featured.length > 0 ? featured : milestones;
+  const sortedCandidate = [...candidateItems].sort(compareMilestonesChronological);
+  const featuredItems = sortedCandidate.slice(0, 4);
 
   return (
     <section className="py-20 bg-hero-gradient relative border-b border-army-gold/20 overflow-hidden">

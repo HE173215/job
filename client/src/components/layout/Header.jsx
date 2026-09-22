@@ -6,9 +6,10 @@ import MobileMenu from './MobileMenu';
 
 const NAV_LINKS = [
   { to: '/', label: 'Trang chủ' },
-  { to: '/history', label: 'Lịch sử – Truyền thống' },
   { to: '/introduction', label: 'Giới thiệu' },
+  { to: '/history', label: 'Lịch sử – Truyền thống' },
   { to: '/news', label: 'Tin tức' },
+  { to: '/battalions', label: 'Đơn vị Tiểu đoàn' },
   { to: '/activities', label: 'Hoạt động' },
   { to: '/gallery', label: 'Thư viện ảnh' },
   { to: '/contact', label: 'Liên hệ' },
@@ -41,10 +42,13 @@ export function Header() {
             to="/"
             className="flex items-center gap-2.5 sm:gap-3 group focus:outline-none focus:ring-1 focus:ring-army-gold/50 rounded-sm shrink-0 select-none"
           >
-            {/* Emblem Circle */}
-            <div className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-army-red to-army-maroon border border-army-gold flex items-center justify-center shadow-gold-glow group-hover:border-army-gold-light transition-all shrink-0">
-              <Star className="w-4 h-4 sm:w-5 sm:h-5 text-army-gold fill-army-gold group-hover:scale-105 transition-transform" />
-              <div className="absolute inset-0 rounded-full border border-army-gold/30 scale-110 pointer-events-none" />
+            {/* Authentic School Logo */}
+            <div className="relative w-10 h-10 sm:w-11 sm:h-11 rounded-full p-0.5 bg-gradient-to-br from-army-gold/40 via-army-red to-army-maroon border border-army-gold/70 flex items-center justify-center shadow-gold-glow group-hover:scale-105 group-hover:border-army-gold transition-all shrink-0 overflow-hidden">
+              <img
+                src="/logo.png"
+                alt="Logo Trường Sĩ quan Chính trị"
+                className="w-full h-full object-contain"
+              />
             </div>
 
             {/* School Title */}

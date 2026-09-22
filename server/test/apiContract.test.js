@@ -56,6 +56,8 @@ test("auth and every admin CMS route are mounted and protected", async () => {
 
     const adminRoutes = [
       ["POST", "/api/v1/admin/media/signature"],
+      ["GET", "/api/v1/admin/introduction"],
+      ["PUT", "/api/v1/admin/introduction"],
       ["GET", "/api/v1/admin/milestones"],
       ["GET", "/api/v1/admin/milestones/507f1f77bcf86cd799439011"],
       ["POST", "/api/v1/admin/milestones"],
@@ -82,7 +84,7 @@ test("auth and every admin CMS route are mounted and protected", async () => {
       const response = await fetch(`${base}${path}`, {
         method,
         headers: { "content-type": "application/json" },
-        body: ["POST", "PATCH"].includes(method) ? "{}" : undefined,
+        body: ["POST", "PUT", "PATCH"].includes(method) ? "{}" : undefined,
       });
       assert.equal(response.status, 401, `${method} ${path}`);
     }

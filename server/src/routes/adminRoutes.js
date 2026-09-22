@@ -7,6 +7,22 @@ import {
   updateActivity,
 } from "../controllers/activityController.js";
 import {
+  createEra,
+  deleteEra,
+  getAdminEra,
+  listAdminEras,
+  updateEra,
+} from "../controllers/eraController.js";
+import {
+  addBattalionPost,
+  createBattalion,
+  deleteBattalion,
+  deleteBattalionPost,
+  getAdminBattalion,
+  listAdminBattalions,
+  updateBattalion,
+} from "../controllers/battalionController.js";
+import {
   createGallery,
   deleteGallery,
   getAdminGallery,
@@ -21,6 +37,10 @@ import {
   updateMilestone,
 } from "../controllers/milestoneController.js";
 import { createUploadSignature } from "../controllers/mediaController.js";
+import {
+  getIntroduction,
+  updateIntroduction,
+} from "../controllers/introductionController.js";
 import {
   createNews,
   deleteNews,
@@ -55,10 +75,26 @@ import {
   validateNewsList,
   validateUpdateNews,
 } from "../validators/newsValidator.js";
+import {
+  validateCreateEra,
+  validateEraId,
+  validateUpdateEra,
+} from "../validators/eraValidator.js";
+import { validateIntroduction } from "../validators/introductionValidator.js";
+import {
+  validateBattalionId,
+  validateBattalionPost,
+  validateCreateBattalion,
+  validateUpdateBattalion,
+} from "../validators/battalionValidator.js";
 
 const router = Router();
 
 router.use(authenticate, authorize("admin", "editor"));
+router
+  .route("/introduction")
+  .get(getIntroduction)
+  .put(validateIntroduction, updateIntroduction);
 router.post("/media/signature", validateMediaSignature, createUploadSignature);
 router
   .route("/milestones")
@@ -96,5 +132,29 @@ router
   .get(validateGalleryId, getAdminGallery)
   .patch(validateGalleryId, validateUpdateGallery, updateGallery)
   .delete(validateGalleryId, deleteGallery);
+
+// Eras Management
+router
+  .route("/eras")
+  .get(listAdminEras)
+  .post(validateCreateEra, createEra);
+router
+  .route("/eras/:id")
+  .get(validateEraId, getAdminEra)
+  .patch(validateEraId, validateUpdateEra, updateEra)
+  .delete(validateEraId, deleteEra);
+
+// Battalions Management
+router
+  .route("/battalions")
+  .get(listAdminBattalions)
+  .post(validateCreateBattalion, createBattalion);
+router
+  .route("/battalions/:id")
+  .get(validateBattalionId, getAdminBattalion)
+  .patch(validateBattalionId, validateUpdateBattalion, updateBattalion)
+  .delete(validateBattalionId, deleteBattalion);
+router.post("/battalions/:id/posts", validateBattalionId, validateBattalionPost, addBattalionPost);
+router.delete("/battalions/:id/posts/:postId", validateBattalionId, deleteBattalionPost);
 
 export default router;

@@ -19,8 +19,8 @@ export function MobileMenu({ isOpen, onClose, navLinks }) {
           {/* Header */}
           <div className="flex items-center justify-between pb-5 border-b border-army-gold/20">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-army-gold/20 border border-army-gold flex items-center justify-center text-army-gold">
-                <Shield className="w-4 h-4" />
+              <div className="w-8 h-8 rounded-full p-0.5 bg-army-gold/20 border border-army-gold flex items-center justify-center overflow-hidden shrink-0">
+                <img src="/logo.png" alt="Logo" className="w-full h-full object-contain" />
               </div>
               <span className="font-serif font-bold text-army-gold text-sm tracking-wider">
                 TRƯỜNG SQ CHÍNH TRỊ

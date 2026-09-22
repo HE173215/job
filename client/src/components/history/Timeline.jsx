@@ -2,6 +2,11 @@ import React, { useRef, useState, useEffect } from 'react';
 import TimelineItem from './TimelineItem';
 import EraBreak from './EraBreak';
 import EmptyState from '../common/EmptyState';
+import {
+  normalizeEraId,
+  compareMilestonesChronological,
+  getSavedEras,
+} from '../../constants/eraConstants';
 
 export function Timeline({ milestones = [], eras = [], onEraVisible }) {
   const timelineRef = useRef(null);
@@ -64,31 +69,64 @@ export function Timeline({ milestones = [], eras = [], onEraVisible }) {
     );
   }
 
-  // Nhóm milestones theo era
-  const assignedGroups = eras
-    .map((era) => ({
+  // Chuẩn hóa danh sách các giai đoạn điều chỉnh
+  const rawEras = eras && eras.length > 0 ? eras : getSavedEras();
+  const normalizedEras = rawEras.map((e) => ({
+    ...e,
+    id: e.slug || e.id || e._id,
+    slug: e.slug || e.id || e._id,
+  }));
+
+  // Nhóm milestones theo từng giai đoạn điều chỉnh
+  const assignedGroups = normalizedEras.map((era) => {
+    const eraKey = String(era.slug || era.id || era._id || '').toLowerCase();
+    const eraDbId = String(era._id || '').toLowerCase();
+
+    const eraItems = milestones.filter((m) => {
+      const assignedEraId = String(normalizeEraId(m.era, m.year, normalizedEras) || '').toLowerCase();
+      return (
+        assignedEraId === eraKey ||
+        (eraDbId && assignedEraId === eraDbId) ||
+        (era.id && assignedEraId === String(era.id).toLowerCase())
+      );
+    });
+
+    // Sắp xếp các mốc son trong cùng giai đoạn theo năm từ trước đến nay
+    eraItems.sort((a, b) => compareMilestonesChronological(a, b, normalizedEras));
+
+    return {
       era,
-      items: milestones.filter((m) => m.era === era.id || m.era === era.name),
-    }))
-    .filter((g) => g.items.length > 0);
+      items: eraItems,
+    };
+  });
 
-  // Mốc son chưa thuộc nhóm era nào cụ thể
-  const unassignedItems = milestones.filter(
-    (m) => !eras.some((e) => e.id === m.era || e.name === m.era)
+  // Thu thập các mốc son chưa thuộc nhóm era nào (nếu có mốc ngoài phạm vi)
+  const assignedMilestoneIds = new Set(
+    assignedGroups.flatMap((g) =>
+      g.items.map((item) => String(item._id || item.id || item.slug))
+    )
   );
+  const unassignedItems = milestones
+    .filter((m) => !assignedMilestoneIds.has(String(m._id || m.id || m.slug)))
+    .sort((a, b) => compareMilestonesChronological(a, b, normalizedEras));
 
-  const groupedMilestones = [...assignedGroups];
+  // Tự động phân bổ các mốc chưa gán vào giai đoạn gần nhất theo năm
   if (unassignedItems.length > 0) {
-    groupedMilestones.push({
-      era: {
-        id: 'tong-hop',
-        name: 'Mốc son truyền thống',
-        title: 'Lịch sử phát triển Nhà trường',
-        timeframe: 'Tổng hợp',
-      },
-      items: unassignedItems,
+    unassignedItems.forEach((m) => {
+      const bestEra = getEraByYear(m.year, normalizedEras);
+      const targetGroup = assignedGroups.find(
+        (g) =>
+          String(g.era.slug || g.era.id || g.era._id).toLowerCase() ===
+          String(bestEra?.slug || bestEra?.id || bestEra?._id).toLowerCase()
+      );
+      if (targetGroup) {
+        targetGroup.items.push(m);
+        targetGroup.items.sort((a, b) => compareMilestonesChronological(a, b, normalizedEras));
+      }
     });
   }
+
+  const groupedMilestones = [...assignedGroups];
 
   let globalItemIndex = 0;
 
@@ -134,27 +172,34 @@ export function Timeline({ milestones = [], eras = [], onEraVisible }) {
 
           {/* Milestones inside this era */}
           <div className="relative">
-            {items.map((milestone) => {
-              const isLeft = globalItemIndex % 2 === 0;
-              const isActive = activeMilestoneId === milestone._id;
-              globalItemIndex += 1;
+            {items.length === 0 ? (
+              <div className="text-center py-6 px-4 bg-army-black/40 border border-army-gold/20 rounded-military max-w-md mx-auto text-xs text-army-muted my-4">
+                Các mốc sự kiện tiêu biểu thuộc {era.name} đang tiếp tục được bổ sung và cập nhật.
+              </div>
+            ) : (
+              items.map((milestone) => {
+                const isLeft = globalItemIndex % 2 === 0;
+                const mKey = milestone._id || milestone.id || milestone.slug || String(globalItemIndex);
+                const isActive = activeMilestoneId === mKey;
+                globalItemIndex += 1;
 
-              return (
-                <div
-                  key={milestone._id || globalItemIndex}
-                  data-milestone-id={milestone._id}
-                  data-era-id={era.id}
-                  className="w-full"
-                >
-                  <TimelineItem
-                    milestone={milestone}
-                    index={globalItemIndex}
-                    isLeft={isLeft}
-                    isActive={isActive}
-                  />
-                </div>
-              );
-            })}
+                return (
+                  <div
+                    key={mKey}
+                    data-milestone-id={mKey}
+                    data-era-id={era.id}
+                    className="w-full"
+                  >
+                    <TimelineItem
+                      milestone={milestone}
+                      index={globalItemIndex}
+                      isLeft={isLeft}
+                      isActive={isActive}
+                    />
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
       ))}

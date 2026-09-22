@@ -17,13 +17,6 @@ Kiến trúc:
 - Frontend: component-based React architecture
 - REST API giao tiếp giữa FE và BE
 
-Phân công tuyệt đối:
-
-- CODEX chỉ code BACKEND trong /server
-- ANTIGRAVITY chỉ code FRONTEND trong /client
-
-Không agent nào được tự ý sửa source của agent còn lại.
-
 ---
 
 # 2. Môi trường

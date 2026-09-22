@@ -31,9 +31,13 @@ export function HomeHero() {
       <Container className="relative z-10 py-20 flex flex-col items-center">
         {/* Emblem Top Circle */}
         <div className="mb-6 flex items-center justify-center">
-          <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gradient-to-b from-army-maroon via-army-red to-army-black border-2 border-army-gold flex items-center justify-center shadow-gold-glow-lg">
-            <Star className="w-10 h-10 sm:w-12 sm:h-12 text-army-gold fill-army-gold" />
-            <div className="absolute -inset-1.5 rounded-full border border-army-gold/30 animate-pulse pointer-events-none" />
+          <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-full p-1 bg-gradient-to-b from-army-maroon via-army-red to-army-black border-2 border-army-gold flex items-center justify-center shadow-gold-glow-lg overflow-hidden">
+            <img
+              src="/logo.png"
+              alt="Logo Trường Sĩ quan Chính trị"
+              className="w-full h-full object-contain drop-shadow-[0_2px_8px_rgba(217,156,43,0.5)]"
+            />
+            <div className="absolute -inset-1.5 rounded-full border border-army-gold/40 animate-pulse pointer-events-none" />
           </div>
         </div>
 

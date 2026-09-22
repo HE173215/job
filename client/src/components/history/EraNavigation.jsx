@@ -26,12 +26,13 @@ export function EraNavigation({ eras, activeEra, onSelectEra }) {
       <Container>
         {/* Mobile: Horizontal Scroll with hidden scrollbar / Desktop: Centered */}
         <div className="flex items-center md:justify-center overflow-x-auto no-scrollbar gap-2 sm:gap-3 px-1 py-0.5">
-          {eras.map((era) => {
-            const isActive = activeEra === era.id;
+          {(eras || []).map((era) => {
+            const eraKey = era.id || era.slug || era._id;
+            const isActive = activeEra === eraKey || activeEra === era.id || activeEra === era.slug;
             return (
               <button
-                key={era.id}
-                onClick={() => handleTabClick(era.id)}
+                key={eraKey}
+                onClick={() => handleTabClick(eraKey)}
                 className={`shrink-0 px-3.5 sm:px-5 py-2 rounded-military text-xs sm:text-sm font-serif font-bold uppercase tracking-wider transition-all duration-300 focus:outline-none flex items-center gap-2 whitespace-nowrap ${
                   isActive
                     ? 'bg-army-gold text-army-maroon shadow-gold-glow border border-army-gold-light'

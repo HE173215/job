@@ -7,18 +7,24 @@ import {
   Newspaper,
   CalendarDays,
   Image as ImageIcon,
+  Sliders,
   ExternalLink,
   LogOut,
-  Shield,
-  Star,
+  Users,
+  CalendarRange,
+  BookOpen,
 } from 'lucide-react';
 
 export const ADMIN_NAV_ITEMS = [
   { to: '/admin', label: 'Dashboard', icon: LayoutDashboard, end: true },
+  { to: '/admin/introduction', label: 'Trang giới thiệu', icon: BookOpen },
   { to: '/admin/history', label: 'Lịch sử truyền thống', icon: Clock },
+  { to: '/admin/eras', label: 'Giai đoạn lịch sử', icon: CalendarRange },
+  { to: '/admin/battalions', label: 'Đơn vị Tiểu đoàn', icon: Users },
   { to: '/admin/news', label: 'Tin tức & Bài viết', icon: Newspaper },
   { to: '/admin/activities', label: 'Hoạt động nổi bật', icon: CalendarDays },
   { to: '/admin/gallery', label: 'Thư viện ảnh', icon: ImageIcon },
+  { to: '/admin/settings', label: 'Cài đặt & Ghi chú chân trang', icon: Sliders },
 ];
 
 export function AdminSidebar({ className = '', onItemClick }) {
@@ -38,8 +44,8 @@ export function AdminSidebar({ className = '', onItemClick }) {
       <div>
         {/* Brand Banner */}
         <div className="p-5 border-b border-army-gold/20 flex items-center gap-3 bg-army-black/30">
-          <div className="w-10 h-10 rounded-full bg-army-black border border-army-gold flex items-center justify-center text-army-gold shadow-gold-glow shrink-0">
-            <Star className="w-5 h-5 fill-army-gold" />
+          <div className="w-10 h-10 rounded-full p-0.5 bg-army-black border border-army-gold flex items-center justify-center shadow-gold-glow shrink-0 overflow-hidden">
+            <img src="/logo.png" alt="Logo" className="w-full h-full object-contain" />
           </div>
           <div className="flex flex-col overflow-hidden">
             <span className="text-[10px] text-army-gold font-serif uppercase tracking-widest font-semibold truncate">

@@ -6,6 +6,12 @@ import MultiImageUploader from '../../../components/admin/media/MultiImageUpload
 import AdminPageHeader from '../../../components/admin/common/AdminPageHeader';
 import AdminLoading from '../../../components/admin/common/AdminLoading';
 import { slugify } from '../../../utils/slug';
+import {
+  OFFICIAL_ERAS,
+  getEraByYear,
+  normalizeEraId,
+} from '../../../constants/eraConstants';
+import eraService from '../../../services/eraService';
 import { Save, Eye, Loader2, AlertCircle } from 'lucide-react';
 
 export function HistoryFormPage() {
@@ -13,6 +19,7 @@ export function HistoryFormPage() {
   const isEdit = Boolean(id);
   const navigate = useNavigate();
 
+  const [erasList, setErasList] = useState(OFFICIAL_ERAS);
   const [loading, setLoading] = useState(isEdit);
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -36,30 +43,36 @@ export function HistoryFormPage() {
   });
 
   useEffect(() => {
-    if (!isEdit) return;
-
     let mounted = true;
-    async function loadData() {
+
+    async function initialize() {
       setLoading(true);
       try {
-        const data = await adminMilestoneService.getById(id);
-        if (mounted && data) {
-          setFormData({
-            year: data.year || '',
-            date: data.date ? data.date.split('T')[0] : '',
-            title: data.title || '',
-            slug: data.slug || '',
-            era: data.era || 'giai-doan-1',
-            summary: data.summary || '',
-            content: data.content || '',
-            coverImage: data.coverImage || null,
-            gallery: Array.isArray(data.gallery) ? data.gallery : [],
-            source: data.source || '',
-            order: data.order ?? 0,
-            featured: Boolean(data.featured),
-            published: Boolean(data.published),
-          });
-          setSlugManuallyEdited(true);
+        const eras = await eraService.getEras().catch(() => OFFICIAL_ERAS);
+        const activeEras = Array.isArray(eras) && eras.length > 0 ? eras : OFFICIAL_ERAS;
+        if (mounted) setErasList(activeEras);
+
+        if (isEdit) {
+          const data = await adminMilestoneService.getById(id);
+          if (mounted && data) {
+            const normalizedEra = normalizeEraId(data.era, data.year, activeEras);
+            setFormData({
+              year: data.year || '',
+              date: data.date ? data.date.split('T')[0] : '',
+              title: data.title || '',
+              slug: data.slug || '',
+              era: normalizedEra || activeEras[0]?.slug || activeEras[0]?.id || 'giai-doan-1',
+              summary: data.summary || '',
+              content: data.content || '',
+              coverImage: data.coverImage || null,
+              gallery: Array.isArray(data.gallery) ? data.gallery : [],
+              source: data.source || '',
+              order: data.order ?? 0,
+              featured: Boolean(data.featured),
+              published: Boolean(data.published),
+            });
+            setSlugManuallyEdited(true);
+          }
         }
       } catch (err) {
         if (mounted) setErrorMessage(err.message || 'Không thể tải dữ liệu mốc lịch sử.');
@@ -68,7 +81,7 @@ export function HistoryFormPage() {
       }
     }
 
-    loadData();
+    initialize();
     return () => {
       mounted = false;
     };
@@ -88,16 +101,29 @@ export function HistoryFormPage() {
       setErrorMessage('Vui lòng nhập tiêu đề mốc lịch sử.');
       return;
     }
-    if (!formData.year.toString().trim()) {
-      setErrorMessage('Vui lòng nhập năm mốc lịch sử.');
+    const rawYear = formData.year.toString().trim();
+    if (!rawYear) {
+      setErrorMessage('Vui lòng nhập năm mốc lịch sử (số nguyên, ví dụ: 1951, 1975).');
+      return;
+    }
+    const parsedYear = parseInt(rawYear, 10);
+    if (isNaN(parsedYear) || parsedYear < 0 || parsedYear > 9999) {
+      setErrorMessage('Năm sự kiện phải là số nguyên từ 0 đến 9999 (ví dụ: 1951, 1975, 2024).');
       return;
     }
 
     setSubmitting(true);
     setErrorMessage('');
 
+    const finalSlug = (formData.slug?.trim() || slugify(formData.title)).toLowerCase();
+
     const payload = {
       ...formData,
+      year: parsedYear,
+      date: formData.date && formData.date.trim() ? formData.date.trim() : null,
+      slug: finalSlug,
+      coverImage: formData.coverImage && formData.coverImage.url ? formData.coverImage : null,
+      gallery: Array.isArray(formData.gallery) ? formData.gallery.filter((img) => img && img.url) : [],
       published: publishStatus,
       order: Number(formData.order) || 0,
     };
@@ -110,7 +136,12 @@ export function HistoryFormPage() {
       }
       navigate('/admin/history');
     } catch (err) {
-      setErrorMessage(err.message || 'Lưu dữ liệu thất bại. Vui lòng kiểm tra lại.');
+      let msg = err.message || 'Lưu dữ liệu thất bại. Vui lòng kiểm tra lại.';
+      if (Array.isArray(err.errors) && err.errors.length > 0) {
+        const details = err.errors.map((e) => `${e.field}: ${e.message}`).join('; ');
+        msg = `${msg} (${details})`;
+      }
+      setErrorMessage(msg);
     } finally {
       setSubmitting(false);
     }
@@ -152,13 +183,31 @@ export function HistoryFormPage() {
                 Năm sự kiện <span className="text-red-600">*</span>
               </label>
               <input
-                type="text"
+                type="number"
+                min="0"
+                max="9999"
                 required
-                placeholder="VD: 1975 hoặc 19XX"
+                placeholder="VD: 1951, 1975, 2024"
                 value={formData.year}
-                onChange={(e) => setFormData({ ...formData, year: e.target.value })}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setFormData((prev) => {
+                    const cleanVal = val.trim();
+                    const matchedEra =
+                      cleanVal && /^\d{4}$/.test(cleanVal)
+                        ? getEraByYear(cleanVal, erasList)
+                        : null;
+                    const autoEra = matchedEra ? (matchedEra.slug || matchedEra.id || matchedEra._id) : prev.era;
+                    return {
+                      ...prev,
+                      year: val,
+                      era: autoEra,
+                    };
+                  });
+                }}
                 className="w-full px-3 py-2 text-xs rounded border border-stone-200 focus:border-[#D99C2B] focus:outline-none"
               />
+              <span className="text-[10px] text-stone-400 mt-0.5 block">Nhập 4 chữ số năm (tự nhận diện giai đoạn)</span>
             </div>
 
             <div>
@@ -182,10 +231,14 @@ export function HistoryFormPage() {
                 onChange={(e) => setFormData({ ...formData, era: e.target.value })}
                 className="w-full px-3 py-2 text-xs rounded border border-stone-200 bg-white focus:border-[#D99C2B] focus:outline-none"
               >
-                <option value="giai-doan-1">Giai đoạn I (19XX – 19XX)</option>
-                <option value="giai-doan-2">Giai đoạn II (19XX – 19XX)</option>
-                <option value="giai-doan-3">Giai đoạn III (19XX – 20XX)</option>
-                <option value="giai-doan-4">Giai đoạn IV (20XX – Nay)</option>
+                {erasList.map((era) => {
+                  const val = era.slug || era.id || era._id;
+                  return (
+                    <option key={era.id || era._id || era.slug} value={val}>
+                      {era.name} ({era.timeframe}): {era.title}
+                    </option>
+                  );
+                })}
               </select>
             </div>
           </div>
@@ -246,30 +299,17 @@ export function HistoryFormPage() {
             />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-            <div>
-              <label className="block text-xs font-serif font-bold uppercase tracking-wider text-stone-700 mb-1">
-                Nguồn tư liệu lưu trữ
-              </label>
-              <input
-                type="text"
-                placeholder="VD: Phòng Lưu trữ Tư liệu Nhà trường"
-                value={formData.source}
-                onChange={(e) => setFormData({ ...formData, source: e.target.value })}
-                className="w-full px-3 py-2 text-xs rounded border border-stone-200 focus:border-[#D99C2B] focus:outline-none"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-serif font-bold uppercase tracking-wider text-stone-700 mb-1">
-                Thứ tự sắp xếp (Order)
-              </label>
-              <input
-                type="number"
-                value={formData.order}
-                onChange={(e) => setFormData({ ...formData, order: e.target.value })}
-                className="w-full px-3 py-2 text-xs rounded border border-stone-200 focus:border-[#D99C2B] focus:outline-none"
-              />
-            </div>
+          <div className="pt-2">
+            <label className="block text-xs font-serif font-bold uppercase tracking-wider text-stone-700 mb-1">
+              Nguồn tư liệu lưu trữ
+            </label>
+            <input
+              type="text"
+              placeholder="VD: Phòng Lưu trữ Tư liệu Nhà trường"
+              value={formData.source}
+              onChange={(e) => setFormData({ ...formData, source: e.target.value })}
+              className="w-full px-3 py-2 text-xs rounded border border-stone-200 focus:border-[#D99C2B] focus:outline-none"
+            />
           </div>
         </div>
 

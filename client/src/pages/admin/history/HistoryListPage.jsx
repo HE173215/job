@@ -9,8 +9,15 @@ import AdminEmptyState from '../../../components/admin/common/AdminEmptyState';
 import AdminLoading from '../../../components/admin/common/AdminLoading';
 import AdminErrorState from '../../../components/admin/common/AdminErrorState';
 import ConfirmModal from '../../../components/admin/common/ConfirmModal';
+import {
+  OFFICIAL_ERAS,
+  compareMilestonesChronological,
+  normalizeEraId,
+} from '../../../constants/eraConstants';
+import eraService from '../../../services/eraService';
 
 export function HistoryListPage() {
+  const [erasList, setErasList] = useState(OFFICIAL_ERAS);
   const [milestones, setMilestones] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -32,23 +39,32 @@ export function HistoryListPage() {
     try {
       const res = await adminMilestoneService.getList({
         page,
-        limit: 15,
+        limit: 50,
         search: searchQuery.trim() || undefined,
-        era: selectedEra !== 'all' ? selectedEra : undefined,
+        sort: 'year',
       });
 
       if (res?.data) {
-        let items = res.data;
-        // Lọc phía client nếu API mock
-        if (searchQuery.trim()) {
-          items = items.filter((m) =>
-            m.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            m.year?.toString().includes(searchQuery)
+        let items = Array.isArray(res.data) ? [...res.data] : [];
+
+        // Lọc theo giai đoạn nếu chọn
+        if (selectedEra !== 'all') {
+          items = items.filter(
+            (m) => normalizeEraId(m.era, m.year, erasList) === selectedEra || m.era === selectedEra
           );
         }
-        if (selectedEra !== 'all') {
-          items = items.filter((m) => m.era === selectedEra);
+
+        // Tìm kiếm theo từ khóa
+        if (searchQuery.trim()) {
+          items = items.filter(
+            (m) =>
+              m.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+              m.year?.toString().includes(searchQuery)
+          );
         }
+
+        // Sắp xếp theo trình tự thời gian từ năm trước đến nay
+        items.sort((a, b) => compareMilestonesChronological(a, b, erasList));
 
         setMilestones(items);
         setTotal(res.pagination?.total || items.length);
@@ -59,7 +75,15 @@ export function HistoryListPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, searchQuery, selectedEra]);
+  }, [page, searchQuery, selectedEra, erasList]);
+
+  useEffect(() => {
+    eraService.getEras().then((res) => {
+      if (Array.isArray(res) && res.length > 0) {
+        setErasList(res);
+      }
+    }).catch(() => {});
+  }, []);
 
   useEffect(() => {
     fetchList();
@@ -71,7 +95,7 @@ export function HistoryListPage() {
     try {
       await adminMilestoneService.delete(deleteTarget._id || deleteTarget.id);
       setDeleteTarget(null);
-      await fetchList();
+      fetchList();
     } catch (err) {
       alert(err.message || 'Xóa mốc lịch sử thất bại.');
     } finally {
@@ -83,7 +107,7 @@ export function HistoryListPage() {
     <div>
       <AdminPageHeader
         title="Quản Lý Lịch Sử Truyền Thống"
-        subtitle="Danh sách các cột mốc lịch sử, sự kiện và tư liệu qua từng thời kỳ"
+        subtitle="Danh sách các cột mốc lịch sử, sự kiện được tự động sắp xếp theo giai đoạn và năm từ trước đến nay"
         breadcrumb={[{ label: 'Lịch sử truyền thống' }]}
         action={
           <Link
@@ -117,10 +141,11 @@ export function HistoryListPage() {
             className="w-full sm:w-auto px-3 py-1.5 text-xs rounded border border-stone-200 bg-white focus:border-[#D99C2B] focus:outline-none"
           >
             <option value="all">Tất cả giai đoạn</option>
-            <option value="giai-doan-1">Giai đoạn I (19XX – 19XX)</option>
-            <option value="giai-doan-2">Giai đoạn II (19XX – 19XX)</option>
-            <option value="giai-doan-3">Giai đoạn III (19XX – 20XX)</option>
-            <option value="giai-doan-4">Giai đoạn IV (20XX – Nay)</option>
+            {erasList.map((era) => (
+              <option key={era.id || era._id || era.slug} value={era.id || era.slug}>
+                {era.name} ({era.timeframe}): {era.title}
+              </option>
+            ))}
           </select>
         </div>
       </div>
@@ -144,7 +169,7 @@ export function HistoryListPage() {
             <table className="w-full text-left text-xs text-stone-700">
               <thead className="bg-stone-50 border-b border-stone-200 text-[11px] font-serif uppercase tracking-wider text-stone-500 font-bold">
                 <tr>
-                  <th className="py-3 px-4 w-16 text-center">Thứ tự</th>
+                  <th className="py-3 px-4 w-14 text-center">STT</th>
                   <th className="py-3 px-4 w-24">Năm</th>
                   <th className="py-3 px-4">Tiêu đề mốc lịch sử</th>
                   <th className="py-3 px-4">Giai đoạn</th>
@@ -153,10 +178,10 @@ export function HistoryListPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-stone-100">
-                {milestones.map((item) => (
+                {milestones.map((item, index) => (
                   <tr key={item._id || item.id} className="hover:bg-stone-50/80 transition-colors">
-                    <td className="py-3 px-4 font-mono text-center font-bold text-stone-500">
-                      {item.order || 0}
+                    <td className="py-3 px-4 font-mono text-center text-stone-400 text-xs font-semibold">
+                      {(page - 1) * 50 + index + 1}
                     </td>
                     <td className="py-3 px-4 font-serif font-extrabold text-[#410202]">
                       <span className="px-2 py-0.5 rounded bg-amber-50 text-amber-900 border border-amber-200">
@@ -170,7 +195,15 @@ export function HistoryListPage() {
                       )}
                     </td>
                     <td className="py-3 px-4 text-stone-600 text-xs">
-                      {item.eraLabel || item.era || 'Giai đoạn'}
+                      {(() => {
+                        const targetId = normalizeEraId(item.era, item.year, erasList);
+                        const matchedEra =
+                          erasList.find((e) => e.slug === targetId || e.id === targetId || e._id === targetId) ||
+                          OFFICIAL_ERAS.find((e) => e.id === targetId || e.slug === targetId);
+                        return matchedEra
+                          ? `${matchedEra.name} (${matchedEra.timeframe})`
+                          : item.eraLabel || item.era || 'Giai đoạn';
+                      })()}
                     </td>
                     <td className="py-3 px-4">
                       <AdminStatusBadge published={item.published} featured={item.featured} />
@@ -202,13 +235,13 @@ export function HistoryListPage() {
 
           {/* Mobile Card List (< 768px) */}
           <div className="md:hidden divide-y divide-stone-100">
-            {milestones.map((item) => (
+            {milestones.map((item, index) => (
               <div key={item._id || item.id} className="p-4 space-y-2.5">
                 <div className="flex items-center justify-between">
                   <span className="font-serif font-extrabold px-2.5 py-0.5 rounded bg-amber-50 text-amber-900 border border-amber-200 text-xs">
                     {item.year || '19XX'}
                   </span>
-                  <span className="text-xs text-stone-400 font-mono">#{item.order || 0}</span>
+                  <span className="text-xs text-stone-400 font-mono">STT #{index + 1}</span>
                 </div>
 
                 <h4 className="font-serif font-bold text-sm text-[#241A18]">{item.title}</h4>

@@ -11,10 +11,14 @@ export function AdminLayout() {
   // Xác định tiêu đề trang dựa trên pathname
   const getPageTitle = (pathname) => {
     if (pathname === '/admin') return 'Tổng Quan Bảng Điều Khiển';
+    if (pathname.startsWith('/admin/introduction')) return 'Chỉnh Sửa Trang Giới Thiệu';
     if (pathname.startsWith('/admin/history')) return 'Quản Lý Lịch Sử Truyền Thống';
+    if (pathname.startsWith('/admin/eras')) return 'Quản Lý Các Giai Đoạn Lịch Sử';
+    if (pathname.startsWith('/admin/battalions')) return 'Quản Lý Các Đơn Vị Tiểu Đoàn';
     if (pathname.startsWith('/admin/news')) return 'Quản Lý Tin Tức & Bài Viết';
     if (pathname.startsWith('/admin/activities')) return 'Quản Lý Hoạt Động';
     if (pathname.startsWith('/admin/gallery')) return 'Quản Lý Thư Viện Ảnh';
+    if (pathname.startsWith('/admin/settings')) return 'Cài Đặt & Ghi Chú Chân Trang';
     return 'Hệ Thống Quản Trị CMS';
   };
 

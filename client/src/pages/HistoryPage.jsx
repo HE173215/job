@@ -16,13 +16,22 @@ export function HistoryPage() {
   const { milestones, eras, gallery, loading, error, refetch } = useMilestones();
   const [activeEra, setActiveEra] = useState('giai-doan-1');
 
+  React.useEffect(() => {
+    if (eras && eras.length > 0) {
+      const firstEraKey = eras[0].id || eras[0].slug || eras[0]._id;
+      if (!eras.some((e) => (e.id || e.slug || e._id) === activeEra)) {
+        setActiveEra(firstEraKey);
+      }
+    }
+  }, [eras, activeEra]);
+
   return (
     <div className="bg-army-black text-army-white min-h-screen">
       {/* 1. History Hero (100vh, Ceremonial) */}
       <HistoryHero />
 
       {/* 2. History Intro & Architectural Overview */}
-      <HistoryIntro />
+      <HistoryIntro eras={eras} milestones={milestones} />
 
 
       {/* 3. Loading, Error, or Main Timeline */}

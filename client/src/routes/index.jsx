@@ -5,6 +5,7 @@ import { createBrowserRouter } from 'react-router-dom';
 import MainLayout from '../layouts/MainLayout';
 import HomePage from '../pages/HomePage';
 import HistoryPage from '../pages/HistoryPage';
+import BattalionsPage from '../pages/BattalionsPage';
 import IntroductionPage from '../pages/IntroductionPage';
 import NewsPage from '../pages/NewsPage';
 import ActivitiesPage from '../pages/ActivitiesPage';
@@ -17,10 +18,17 @@ import ProtectedAdminRoute from './ProtectedAdminRoute';
 import AdminLayout from '../layouts/AdminLayout';
 import AdminLoginPage from '../pages/admin/AdminLoginPage';
 import AdminDashboardPage from '../pages/admin/AdminDashboardPage';
+import AdminSettingsPage from '../pages/admin/AdminSettingsPage';
+import IntroductionEditPage from '../pages/admin/introduction/IntroductionEditPage';
 
-// History Admin
+// History & Era Admin
 import HistoryListPage from '../pages/admin/history/HistoryListPage';
 import HistoryFormPage from '../pages/admin/history/HistoryFormPage';
+import EraListPage from '../pages/admin/eras/EraListPage';
+
+// Battalion Admin
+import BattalionListPage from '../pages/admin/battalions/BattalionListPage';
+import BattalionFormPage from '../pages/admin/battalions/BattalionFormPage';
 
 // News Admin
 import NewsListPage from '../pages/admin/news/NewsListPage';
@@ -47,6 +55,10 @@ export const router = createBrowserRouter([
       {
         path: 'history',
         element: <HistoryPage />,
+      },
+      {
+        path: 'battalions',
+        element: <BattalionsPage />,
       },
       {
         path: 'introduction',
@@ -93,6 +105,10 @@ export const router = createBrowserRouter([
             index: true,
             element: <AdminDashboardPage />,
           },
+          {
+            path: 'introduction',
+            element: <IntroductionEditPage />,
+          },
           // History Management
           {
             path: 'history',
@@ -105,6 +121,24 @@ export const router = createBrowserRouter([
           {
             path: 'history/:id/edit',
             element: <HistoryFormPage />,
+          },
+          // Eras Management
+          {
+            path: 'eras',
+            element: <EraListPage />,
+          },
+          // Battalions Management
+          {
+            path: 'battalions',
+            element: <BattalionListPage />,
+          },
+          {
+            path: 'battalions/create',
+            element: <BattalionFormPage />,
+          },
+          {
+            path: 'battalions/:id/edit',
+            element: <BattalionFormPage />,
           },
           // News Management
           {
@@ -145,10 +179,19 @@ export const router = createBrowserRouter([
             path: 'gallery/:id/edit',
             element: <GalleryFormPage />,
           },
+          // System & Footer Settings Management
+          {
+            path: 'settings',
+            element: <AdminSettingsPage />,
+          },
         ],
       },
     ],
   },
-]);
+], {
+  future: {
+    v7_relativeSplatPath: true,
+  },
+});
 
 export default router;
