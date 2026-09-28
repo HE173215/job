@@ -15,14 +15,14 @@ const safeUser = (user) => ({
 
 export const authService = {
   async login({ username, password }) {
-    const user = await User.findOne({ username }).select("+password");
+    const user = await User.findOne({ username }).select("+password +tokenVersion");
 
     if (!user || !(await user.verifyPassword(password))) {
       throw new AppError(401, "Invalid username or password");
     }
     if (!user.active) throw new AppError(403, "Account is inactive");
 
-    const token = jwt.sign({}, env.jwtSecret, {
+    const token = jwt.sign({ ver: user.tokenVersion ?? 0 }, env.jwtSecret, {
       algorithm: "HS256",
       subject: user.id,
       issuer: "political-officer-school-api",

@@ -2,7 +2,15 @@ import mongoose from "mongoose";
 
 const eraSchema = new mongoose.Schema(
   {
-    slug: { type: String, required: true, unique: true, trim: true },
+    slug: {
+      type: String,
+      required: true,
+      unique: true,
+      trim: true,
+      lowercase: true,
+      maxlength: 100,
+      match: /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
+    },
     name: { type: String, required: true, trim: true },
     timeframe: { type: String, required: true, trim: true },
     title: { type: String, required: true, trim: true },

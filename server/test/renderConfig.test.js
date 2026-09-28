@@ -5,6 +5,7 @@ import test from "node:test";
 test("production config supports Render and cross-site Vercel cookies", async () => {
   process.env.NODE_ENV = "production";
   process.env.CLIENT_URL = "https://frontend.example";
+  process.env.TRUST_PROXY_HOPS = "1";
 
   const { AUTH_COOKIE_NAME, authCookieOptions } = await import("../src/config/auth.js");
   const { app } = await import("../src/app.js");
@@ -58,7 +59,7 @@ test("production config supports Render and cross-site Vercel cookies", async ()
   await once(server, "listening");
   try {
     const base = `http://127.0.0.1:${server.address().port}`;
-    for (const path of ["/", "/api/v1/health"]) {
+    for (const path of ["/", "/api/v1/health/live"]) {
       const response = await fetch(`${base}${path}`);
       assert.equal(response.status, 200);
       assert.deepEqual(await response.json(), {
@@ -66,6 +67,9 @@ test("production config supports Render and cross-site Vercel cookies", async ()
         message: "API is running",
       });
     }
+
+    const notReady = await fetch(`${base}/api/v1/health`);
+    assert.equal(notReady.status, 503);
 
     const allowed = await fetch(`${base}/api/v1/health`, {
       headers: { origin: "https://frontend.example" },

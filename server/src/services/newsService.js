@@ -1,6 +1,7 @@
 import { News } from "../models/News.js";
 import { AppError } from "../utils/AppError.js";
 import { escapeRegex } from "../utils/query.js";
+import { mediaService } from "./mediaService.js";
 
 const buildFilter = ({ category, featured, published, search }, publicOnly) => {
   const filter = publicOnly ? { published: true } : {};
@@ -54,9 +55,9 @@ export const newsService = {
 
   async update(id, data) {
     const update = { ...data };
+    const existing = await News.findById(id).select("-__v").lean();
+    if (!existing) throw new AppError(404, "News article not found");
     if (update.published === true && update.publishedAt == null) {
-      const existing = await News.findById(id).select("publishedAt").lean();
-      if (!existing) throw new AppError(404, "News article not found");
       if (update.publishedAt === null || !existing.publishedAt) {
         update.publishedAt = new Date();
       }
@@ -66,11 +67,13 @@ export const newsService = {
       .select("-__v")
       .lean();
     if (!news) throw new AppError(404, "News article not found");
+    void mediaService.cleanupRemovedAssets(existing, news);
     return news;
   },
 
   async remove(id) {
-    const news = await News.findByIdAndDelete(id).select("_id").lean();
+    const news = await News.findByIdAndDelete(id).select("-__v").lean();
     if (!news) throw new AppError(404, "News article not found");
+    void mediaService.cleanupRemovedAssets(news);
   },
 };

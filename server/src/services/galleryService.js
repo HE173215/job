@@ -1,5 +1,6 @@
 import { GalleryAlbum } from "../models/GalleryAlbum.js";
 import { AppError } from "../utils/AppError.js";
+import { mediaService } from "./mediaService.js";
 
 const buildFilter = ({ featured, published }, publicOnly) => {
   const filter = publicOnly ? { published: true } : {};
@@ -45,15 +46,19 @@ export const galleryService = {
   },
 
   async update(id, data) {
+    const existing = await GalleryAlbum.findById(id).select("-__v").lean();
+    if (!existing) throw new AppError(404, "Gallery album not found");
     const album = await GalleryAlbum.findByIdAndUpdate(id, data, { new: true, runValidators: true })
       .select("-__v")
       .lean();
     if (!album) throw new AppError(404, "Gallery album not found");
+    void mediaService.cleanupRemovedAssets(existing, album);
     return album;
   },
 
   async remove(id) {
-    const album = await GalleryAlbum.findByIdAndDelete(id).select("_id").lean();
+    const album = await GalleryAlbum.findByIdAndDelete(id).select("-__v").lean();
     if (!album) throw new AppError(404, "Gallery album not found");
+    void mediaService.cleanupRemovedAssets(album);
   },
 };

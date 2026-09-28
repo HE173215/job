@@ -1,5 +1,11 @@
 import mongoose from "mongoose";
 import sanitizeHtml from "sanitize-html";
+import {
+  CLOUDINARY_ALLOWED_FORMATS,
+  CLOUDINARY_MAX_IMAGE_BYTES,
+  CLOUDINARY_ROOT_FOLDER,
+} from "../config/cloudinary.js";
+import { env } from "../config/env.js";
 import { AppError } from "../utils/AppError.js";
 
 export const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -27,7 +33,7 @@ export const readListQuery = (
   errors,
   { allowPublished = false, allowSearch = false } = {},
 ) => {
-  const page = parsePositiveInteger(query.page, 1, 1_000_000);
+  const page = parsePositiveInteger(query.page, 1, 1_000);
   const limit = parsePositiveInteger(query.limit, 12, 100);
   const featured = parseBoolean(query.featured);
   const published = allowPublished ? parseBoolean(query.published) : undefined;
@@ -36,7 +42,7 @@ export const readListQuery = (
       ? query.search.trim()
       : query.search;
 
-  addError(errors, "page", page === null, "Must be an integer from 1 to 1000000");
+  addError(errors, "page", page === null, "Must be an integer from 1 to 1000");
   addError(errors, "limit", limit === null, "Must be an integer from 1 to 100");
   addError(errors, "featured", featured === null, "Must be true or false");
   addError(errors, "published", allowPublished && published === null, "Must be true or false");
@@ -143,10 +149,41 @@ export const validateImage = (value, field, errors, { ordered = false } = {}) =>
 
   if (typeof value.url === "string") {
     try {
-      addError(errors, `${field}.url`, new URL(value.url).protocol !== "https:", "Must be an HTTPS URL");
+      const url = new URL(value.url);
+      const validCloudinaryUrl = url.protocol === "https:"
+        && url.hostname === "res.cloudinary.com"
+        && url.pathname.startsWith(`/${env.cloudinaryCloudName}/`);
+      addError(errors, `${field}.url`, !validCloudinaryUrl, "Must be an HTTPS URL from the configured Cloudinary account");
     } catch {
-      errors.push({ field: `${field}.url`, message: "Must be a valid HTTPS URL" });
+      errors.push({ field: `${field}.url`, message: "Must be a valid Cloudinary HTTPS URL" });
     }
+  }
+
+  if (typeof value.publicId === "string") {
+    addError(
+      errors,
+      `${field}.publicId`,
+      !value.publicId.startsWith(CLOUDINARY_ROOT_FOLDER),
+      "Must belong to the configured application folder",
+    );
+  }
+
+  if (typeof value.format === "string" && value.format) {
+    addError(
+      errors,
+      `${field}.format`,
+      !CLOUDINARY_ALLOWED_FORMATS.includes(value.format.toLowerCase()),
+      `Must be one of: ${CLOUDINARY_ALLOWED_FORMATS.join(", ")}`,
+    );
+  }
+
+  if (typeof value.bytes === "number") {
+    addError(
+      errors,
+      `${field}.bytes`,
+      value.bytes > CLOUDINARY_MAX_IMAGE_BYTES,
+      `Must not exceed ${CLOUDINARY_MAX_IMAGE_BYTES} bytes`,
+    );
   }
 
   for (const numberField of ["width", "height", "bytes", ...(ordered ? ["order"] : [])]) {
@@ -171,10 +208,35 @@ export const sanitizeRichText = (value) =>
       img: ["src", "alt", "title", "width", "height", "loading"],
     },
     allowedSchemes: ["http", "https"],
+    exclusiveFilter: (frame) => {
+      if (frame.tag !== "img") return false;
+      try {
+        const url = new URL(frame.attribs?.src);
+        return url.protocol !== "https:"
+          || url.hostname !== "res.cloudinary.com"
+          || !url.pathname.startsWith(`/${env.cloudinaryCloudName}/`);
+      } catch {
+        return true;
+      }
+    },
   });
 
 export const validationError = (errors) =>
   new AppError(422, "Validation failed", errors);
+
+export const validateSearchQuery = (req, _res, next) => {
+  const errors = [];
+  const unknownFields = Object.keys(req.query).filter((field) => field !== "search");
+  for (const field of unknownFields) addError(errors, field, true, "Unknown query parameter");
+
+  const search = typeof req.query.search === "string" ? req.query.search.trim() : req.query.search;
+  addError(errors, "search", search !== undefined && typeof search !== "string", "Must be a string");
+  addError(errors, "search", typeof search === "string" && search.length > 100, "Must not exceed 100 characters");
+
+  if (errors.length) return next(validationError(errors));
+  req.validated = { search };
+  return next();
+};
 
 export const validateSlugParam = (req, _res, next) => {
   if (!SLUG_PATTERN.test(req.params.slug) || req.params.slug.length > 200) {

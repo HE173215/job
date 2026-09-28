@@ -41,7 +41,7 @@ const normalizeError = (error) => {
   return error;
 };
 
-export const errorHandler = (error, _req, res, _next) => {
+export const errorHandler = (error, req, res, _next) => {
   const normalized = normalizeError(error);
   const knownError = normalized.isOperational;
   const statusCode = knownError ? normalized.statusCode : 500;
@@ -55,6 +55,18 @@ export const errorHandler = (error, _req, res, _next) => {
   };
 
   if (!production && normalized.stack) body.stack = normalized.stack;
+
+  if (statusCode >= 500) {
+    console.error(JSON.stringify({
+      event: "request_error",
+      requestId: req.id,
+      method: req.method,
+      path: req.path,
+      status: statusCode,
+      message: normalized.message,
+      stack: normalized.stack,
+    }));
+  }
 
   res.status(statusCode).json(body);
 };

@@ -128,10 +128,4 @@ export const battalionService = {
     await item.save();
     return item.toObject({ versionKey: false });
   },
-
-  async resetDefaults() {
-    await Battalion.deleteMany({});
-    const created = await Battalion.insertMany(DEFAULT_BATTALIONS);
-    return created.map((b) => b.toObject({ versionKey: false }));
-  },
 };

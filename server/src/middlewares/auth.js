@@ -5,11 +5,7 @@ import { User } from "../models/User.js";
 import { AppError } from "../utils/AppError.js";
 
 export const authenticate = async (req, _res, next) => {
-  const authorization = req.get?.("authorization");
-  const bearerToken = authorization?.startsWith("Bearer ")
-    ? authorization.slice(7)
-    : null;
-  const token = req.cookies?.[AUTH_COOKIE_NAME] ?? bearerToken;
+  const token = req.cookies?.[AUTH_COOKIE_NAME];
 
   if (!token) {
     return next(new AppError(401, "Authentication required"));
@@ -27,9 +23,9 @@ export const authenticate = async (req, _res, next) => {
   }
 
   const user = await User.findById(payload.sub).select(
-    "name username email role active",
+    "name username email role active +tokenVersion",
   );
-  if (!user || !user.active) {
+  if (!user || !user.active || payload.ver !== (user.tokenVersion ?? 0)) {
     return next(new AppError(401, "Authentication is no longer valid"));
   }
 

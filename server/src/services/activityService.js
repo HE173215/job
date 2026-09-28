@@ -1,5 +1,6 @@
 import { Activity } from "../models/Activity.js";
 import { AppError } from "../utils/AppError.js";
+import { mediaService } from "./mediaService.js";
 
 const buildFilter = ({ featured, published }, publicOnly) => {
   const filter = publicOnly ? { published: true } : {};
@@ -56,17 +57,21 @@ export const activityService = {
   async update(id, data) {
     const activity = await Activity.findById(id);
     if (!activity) throw new AppError(404, "Activity not found");
+    const existing = activity.toObject({ versionKey: false });
 
     const startDate = data.startDate !== undefined ? data.startDate : activity.startDate;
     const endDate = data.endDate !== undefined ? data.endDate : activity.endDate;
     assertDateOrder(startDate, endDate);
     Object.assign(activity, data);
     await activity.save();
-    return activity.toObject({ versionKey: false });
+    const updated = activity.toObject({ versionKey: false });
+    void mediaService.cleanupRemovedAssets(existing, updated);
+    return updated;
   },
 
   async remove(id) {
-    const activity = await Activity.findByIdAndDelete(id).select("_id").lean();
+    const activity = await Activity.findByIdAndDelete(id).select("-__v").lean();
     if (!activity) throw new AppError(404, "Activity not found");
+    void mediaService.cleanupRemovedAssets(activity);
   },
 };

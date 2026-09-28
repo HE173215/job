@@ -11,7 +11,7 @@ export const getPublishedBattalion = async (req, res) => {
 };
 
 export const listAdminBattalions = async (req, res) => {
-  const data = await battalionService.listAdmin(req.query);
+  const data = await battalionService.listAdmin(req.validated);
   res.status(200).json({ success: true, data });
 };
 
@@ -33,15 +33,6 @@ export const updateBattalion = async (req, res) => {
 export const deleteBattalion = async (req, res) => {
   await battalionService.remove(req.params.id);
   res.status(200).json({ success: true, message: "Đơn vị Tiểu đoàn đã được xóa", data: null });
-};
-
-export const resetDefaultBattalions = async (_req, res) => {
-  const data = await battalionService.resetDefaults();
-  res.status(200).json({
-    success: true,
-    message: "Đã khôi phục danh mục 8 tiểu đoàn mặc định chuẩn",
-    data,
-  });
 };
 
 export const addBattalionPost = async (req, res) => {

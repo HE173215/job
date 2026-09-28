@@ -7,7 +7,10 @@
   "scripts": {
     "dev": "node --watch src/server.js",
     "start": "node src/server.js",
-    "check": "node --test",
+    "check": "node scripts/checkSyntax.js && node --test",
+    "check:syntax": "node scripts/checkSyntax.js",
+    "test:integration": "node --test test/databaseIntegration.test.js",
+    "db:create-indexes": "node scripts/createIndexes.js",
     "seed:admin": "node src/seeds/createAdmin.js",
     "seed:milestones": "node src/seeds/seedMilestones.js"
   },

@@ -3,8 +3,11 @@ import cors from "cors";
 import express from "express";
 import rateLimit from "express-rate-limit";
 import helmet from "helmet";
+import mongoose from "mongoose";
 import { env } from "./config/env.js";
 import { errorHandler, notFound } from "./middlewares/errorHandler.js";
+import { csrfProtection } from "./middlewares/csrfProtection.js";
+import { requestContext } from "./middlewares/requestContext.js";
 import activityRoutes from "./routes/activityRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
@@ -18,9 +21,10 @@ import { AppError } from "./utils/AppError.js";
 
 export const app = express();
 
-app.set("trust proxy", 1);
+app.set("trust proxy", env.trustProxyHops);
 
 app.use(helmet());
+app.use(requestContext);
 app.use(
   cors({
     credentials: true,
@@ -33,19 +37,26 @@ app.use(
 app.get("/", (_req, res) => {
   res.status(200).json({ success: true, message: "API is running" });
 });
-app.get("/api/v1/health", (_req, res) => {
+app.get("/api/v1/health/live", (_req, res) => {
   res.status(200).json({ success: true, message: "API is running" });
+});
+app.get("/api/v1/health", async (_req, res) => {
+  if (mongoose.connection.readyState !== 1) {
+    return res.status(503).json({ success: false, message: "Database is not ready", errors: [] });
+  }
+
+  try {
+    await mongoose.connection.db.admin().ping();
+    return res.status(200).json({ success: true, message: "API and database are ready" });
+  } catch {
+    return res.status(503).json({ success: false, message: "Database is not ready", errors: [] });
+  }
 });
 app.use(
   rateLimit({
     windowMs: 15 * 60 * 1000,
     limit: env.nodeEnv === "production" ? 1500 : 20000,
-    skip: (req) =>
-      env.nodeEnv !== "production" ||
-      req.ip === "127.0.0.1" ||
-      req.ip === "::1" ||
-      req.ip === "::ffff:127.0.0.1" ||
-      req.hostname === "localhost",
+    skip: () => env.nodeEnv !== "production",
     standardHeaders: "draft-8",
     legacyHeaders: false,
     handler: (_req, _res, next) =>
@@ -54,6 +65,7 @@ app.use(
 );
 app.use(express.json({ limit: "1mb" }));
 app.use(cookieParser());
+app.use(csrfProtection);
 
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/milestones", milestoneRoutes);

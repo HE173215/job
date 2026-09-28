@@ -3,6 +3,7 @@ import { once } from "node:events";
 import test from "node:test";
 import { errorHandler } from "../src/middlewares/errorHandler.js";
 import { validateObjectId } from "../src/validators/commonValidator.js";
+import { validateSearchQuery } from "../src/validators/commonValidator.js";
 import { validateMediaSignature } from "../src/validators/mediaValidator.js";
 
 const runMiddleware = (middleware, req) =>
@@ -16,6 +17,16 @@ test("invalid ObjectId and arbitrary Cloudinary folders are rejected", async () 
     body: { folder: "user-controlled/path" },
   });
   assert.equal(folderError.statusCode, 422);
+});
+
+test("admin search rejects unbounded and unknown query input", async () => {
+  const longSearch = await runMiddleware(validateSearchQuery, {
+    query: { search: "x".repeat(101) },
+  });
+  assert.equal(longSearch.statusCode, 422);
+
+  const unknown = await runMiddleware(validateSearchQuery, { query: { sort: "name" } });
+  assert.equal(unknown.statusCode, 422);
 });
 
 test("duplicate keys become a safe 409 response", () => {
@@ -78,6 +89,13 @@ test("auth and every admin CMS route are mounted and protected", async () => {
       ["POST", "/api/v1/admin/gallery"],
       ["PATCH", "/api/v1/admin/gallery/507f1f77bcf86cd799439011"],
       ["DELETE", "/api/v1/admin/gallery/507f1f77bcf86cd799439011"],
+      ["GET", "/api/v1/admin/eras"],
+      ["POST", "/api/v1/admin/eras"],
+      ["DELETE", "/api/v1/admin/eras/507f1f77bcf86cd799439011"],
+      ["GET", "/api/v1/admin/battalions"],
+      ["POST", "/api/v1/admin/battalions"],
+      ["POST", "/api/v1/admin/battalions/507f1f77bcf86cd799439011/posts"],
+      ["DELETE", "/api/v1/admin/battalions/507f1f77bcf86cd799439011/posts/507f1f77bcf86cd799439013"],
     ];
 
     for (const [method, path] of adminRoutes) {

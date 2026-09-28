@@ -24,6 +24,10 @@ test("milestone list applies defaults and caps requested page size", async () =>
   const invalidRequest = { query: { limit: "101" } };
   const error = await run(validateMilestoneList(), invalidRequest);
   assert.equal(error.statusCode, 422);
+
+  const deepPageRequest = { query: { page: "1001" } };
+  const deepPageError = await run(validateMilestoneList(), deepPageRequest);
+  assert.equal(deepPageError.statusCode, 422);
 });
 
 test("milestone create validates input and sanitizes rich text", async () => {
@@ -32,7 +36,7 @@ test("milestone create validates input and sanitizes rich text", async () => {
       year: 0,
       title: "Mốc lịch sử mẫu",
       slug: "moc-lich-su-mau",
-      content: '<p>Nội dung mẫu</p><script>alert("x")</script>',
+      content: '<p>Nội dung mẫu</p><script>alert("x")</script><img src="https://attacker.example/tracker.png">',
     },
   };
 

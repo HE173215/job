@@ -1,6 +1,7 @@
 import { Milestone } from "../models/Milestone.js";
 import { AppError } from "../utils/AppError.js";
 import { escapeRegex } from "../utils/query.js";
+import { mediaService } from "./mediaService.js";
 
 const buildFilter = ({ era, featured, published, search }, publicOnly) => {
   const filter = publicOnly ? { published: true } : {};
@@ -57,6 +58,8 @@ export const milestoneService = {
   },
 
   async update(id, data) {
+    const existing = await Milestone.findById(id).select("-__v").lean();
+    if (!existing) throw new AppError(404, "Milestone not found");
     const milestone = await Milestone.findByIdAndUpdate(id, data, {
       new: true,
       runValidators: true,
@@ -64,11 +67,13 @@ export const milestoneService = {
       .select("-__v")
       .lean();
     if (!milestone) throw new AppError(404, "Milestone not found");
+    void mediaService.cleanupRemovedAssets(existing, milestone);
     return milestone;
   },
 
   async remove(id) {
-    const milestone = await Milestone.findByIdAndDelete(id).select("_id").lean();
+    const milestone = await Milestone.findByIdAndDelete(id).select("-__v").lean();
     if (!milestone) throw new AppError(404, "Milestone not found");
+    void mediaService.cleanupRemovedAssets(milestone);
   },
 };

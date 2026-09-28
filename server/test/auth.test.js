@@ -21,6 +21,7 @@ test("login returns a signed token and never returns the password", async () => 
     email: "admin@example.invalid",
     role: "admin",
     active: true,
+    tokenVersion: 0,
     password: "must-not-leak",
     verifyPassword: async () => true,
   };
@@ -42,9 +43,10 @@ test("authenticate verifies the cookie and reloads the active user", async () =>
     _id: "507f1f77bcf86cd799439011",
     role: "editor",
     active: true,
+    tokenVersion: 0,
   };
   User.findById = () => ({ select: async () => user });
-  const token = jwt.sign({}, env.jwtSecret, {
+  const token = jwt.sign({ ver: user.tokenVersion }, env.jwtSecret, {
     algorithm: "HS256",
     subject: user._id,
     issuer: "political-officer-school-api",

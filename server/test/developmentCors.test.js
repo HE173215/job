@@ -11,7 +11,7 @@ test("development CORS allows the Vite frontend on localhost:3000", async (t) =>
 
   await new Promise((resolve) => server.once("listening", resolve));
   const { port } = server.address();
-  const response = await fetch(`http://127.0.0.1:${port}/api/v1/health`, {
+  const response = await fetch(`http://127.0.0.1:${port}/api/v1/health/live`, {
     headers: { Origin: "http://localhost:3000" },
   });
 

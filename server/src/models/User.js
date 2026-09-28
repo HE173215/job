@@ -32,12 +32,15 @@ const userSchema = new mongoose.Schema(
     },
     role: { type: String, enum: ["admin", "editor"], default: "editor" },
     active: { type: Boolean, default: true },
+    tokenVersion: { type: Number, default: 0, min: 0, select: false },
   },
   { timestamps: true },
 );
 
 userSchema.pre("save", async function hashChangedPassword() {
-  if (this.isModified("password")) this.password = await hashPassword(this.password);
+  if (!this.isModified("password")) return;
+  this.password = await hashPassword(this.password);
+  if (!this.isNew) this.tokenVersion = (this.tokenVersion ?? 0) + 1;
 });
 
 userSchema.methods.verifyPassword = function verify(candidate) {

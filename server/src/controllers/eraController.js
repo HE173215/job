@@ -11,7 +11,7 @@ export const getPublishedEra = async (req, res) => {
 };
 
 export const listAdminEras = async (req, res) => {
-  const data = await eraService.listAdmin(req.query);
+  const data = await eraService.listAdmin(req.validated);
   res.status(200).json({ success: true, data });
 };
 
@@ -33,9 +33,4 @@ export const updateEra = async (req, res) => {
 export const deleteEra = async (req, res) => {
   await eraService.remove(req.params.id);
   res.status(200).json({ success: true, message: "Giai đoạn đã được xóa", data: null });
-};
-
-export const resetDefaultEras = async (_req, res) => {
-  const data = await eraService.resetDefaults();
-  res.status(200).json({ success: true, message: "Đã khôi phục 4 giai đoạn chuẩn mặc định", data });
 };
