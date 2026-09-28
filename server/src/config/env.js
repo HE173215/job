@@ -23,15 +23,26 @@ const parseInteger = (name, value, fallback, { min = 0, max = Number.MAX_SAFE_IN
   return parsed;
 };
 
+const parseAllowedOrigins = (value, isProd) => {
+  const fallback = isProd
+    ? []
+    : ["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:5173", "http://127.0.0.1:5173"];
+  if (!value) return fallback;
+
+  const parsed = value
+    .split(",")
+    .map((item) => item.trim().replace(/\/+$/, ""))
+    .filter(Boolean);
+
+  return isProd ? [...new Set(parsed)] : [...new Set([...parsed, ...fallback])];
+};
+
 export const env = Object.freeze({
   port: parsePort(process.env.PORT),
   mongoUri: process.env.MONGODB_URI,
   jwtSecret: process.env.JWT_SECRET,
   clientUrl,
-  allowedOrigins:
-    nodeEnv === "production"
-      ? [clientUrl].filter(Boolean)
-      : [...new Set([clientUrl, "http://localhost:3000", "http://127.0.0.1:3000"].filter(Boolean))],
+  allowedOrigins: parseAllowedOrigins(clientUrl, nodeEnv === "production"),
   nodeEnv,
   trustProxyHops: parseInteger("TRUST_PROXY_HOPS", process.env.TRUST_PROXY_HOPS, nodeEnv === "production" ? 1 : 0, { max: 10 }),
   shutdownTimeoutMs: parseInteger("SHUTDOWN_TIMEOUT_MS", process.env.SHUTDOWN_TIMEOUT_MS, 10_000, { min: 1_000, max: 60_000 }),

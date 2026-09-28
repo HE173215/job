@@ -51,6 +51,30 @@ test("cookie-authenticated mutations require an allowed Origin", async () => {
       body: "{}",
     });
     assert.equal(trustedOrigin.status, 401);
+
+    const crossSiteTrusted = await fetch(url, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        cookie: "token=invalid",
+        origin: "https://frontend.example",
+        "sec-fetch-site": "cross-site",
+      },
+      body: "{}",
+    });
+    assert.equal(crossSiteTrusted.status, 401);
+
+    const crossSiteUntrusted = await fetch(url, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        cookie: "token=invalid",
+        origin: "https://evil.example",
+        "sec-fetch-site": "cross-site",
+      },
+      body: "{}",
+    });
+    assert.equal(crossSiteUntrusted.status, 403);
   } finally {
     await new Promise((resolve) => server.close(resolve));
   }

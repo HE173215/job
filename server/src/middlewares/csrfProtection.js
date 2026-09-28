@@ -11,7 +11,7 @@ export const csrfProtection = (req, _res, next) => {
   const fetchSite = req.get("sec-fetch-site");
   const usesAuthCookie = Boolean(req.cookies?.[AUTH_COOKIE_NAME]);
 
-  if (fetchSite === "cross-site") {
+  if (fetchSite === "cross-site" && (!origin || !env.allowedOrigins.includes(origin))) {
     return next(new AppError(403, "Cross-site request is not allowed"));
   }
 
