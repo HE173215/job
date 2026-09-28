@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -12,8 +12,13 @@ import {
   Calendar,
   AlertCircle,
   CheckCircle,
+  Upload,
+  Loader2,
+  X,
+  RefreshCw,
 } from 'lucide-react';
 import battalionService from '../../../services/battalionService';
+import mediaService from '../../../services/mediaService';
 
 export function BattalionFormPage() {
   const { id } = useParams();
@@ -51,6 +56,12 @@ export function BattalionFormPage() {
     excerpt: '',
     author: '',
   });
+
+  // State for image upload in modal
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [imageError, setImageError] = useState('');
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     if (isEdit) {
@@ -100,6 +111,32 @@ export function BattalionFormPage() {
     }
   };
 
+  const handleFileSelect = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setImageError('');
+    setUploadingImage(true);
+    setUploadProgress(0);
+
+    try {
+      const uploadedData = await mediaService.uploadImage(file, 'battalions', (percent) => {
+        setUploadProgress(percent);
+      });
+      setNewPost((prev) => ({
+        ...prev,
+        imageUrl: uploadedData.url,
+      }));
+    } catch (err) {
+      setImageError(err.message || 'Không thể tải ảnh lên. Vui lòng thử lại.');
+    } finally {
+      setUploadingImage(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
   const handleAddPost = (e) => {
     e.preventDefault();
     if (!newPost.title.trim()) {
@@ -109,7 +146,6 @@ export function BattalionFormPage() {
 
     const postItem = {
       id: `p-${Date.now()}`,
-      _id: `p-${Date.now()}`,
       title: newPost.title.trim(),
       category: newPost.category.trim() || 'Hoạt động đơn vị',
       date: newPost.date || new Date().toISOString().split('T')[0],
@@ -133,6 +169,7 @@ export function BattalionFormPage() {
       excerpt: '',
       author: '',
     });
+    setImageError('');
     setShowPostModal(false);
   };
 
@@ -157,17 +194,27 @@ export function BattalionFormPage() {
     try {
       setSubmitting(true);
       setError('');
+
+      // Clean posts before sending to avoid invalid _id casting
+      const cleanedPosts = (formData.posts || []).map((p) => {
+        const clean = { ...p };
+        if (clean._id && !/^[0-9a-fA-F]{24}$/.test(String(clean._id))) {
+          delete clean._id;
+        }
+        return clean;
+      });
+
+      const payload = {
+        ...formData,
+        order: Number(formData.order) || 1,
+        posts: cleanedPosts,
+      };
+
       if (isEdit) {
-        await battalionService.update(id, {
-          ...formData,
-          order: Number(formData.order) || 1,
-        });
+        await battalionService.update(id, payload);
         setSuccess('Đã cập nhật đơn vị tiểu đoàn thành công!');
       } else {
-        await battalionService.create({
-          ...formData,
-          order: Number(formData.order) || 1,
-        });
+        await battalionService.create(payload);
         setSuccess('Đã thêm mới đơn vị tiểu đoàn thành công!');
       }
 
@@ -548,19 +595,74 @@ export function BattalionFormPage() {
                 </div>
               </div>
 
-              <div>
-                <label className="block font-semibold text-gray-700 mb-1">
-                  Đường dẫn ảnh (Image URL)
-                </label>
+              {/* Image Input Section */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="block font-semibold text-gray-700">
+                    Ảnh bài viết / hoạt động
+                  </label>
+                  {newPost.imageUrl && (
+                    <button
+                      type="button"
+                      onClick={() => setNewPost({ ...newPost, imageUrl: '' })}
+                      className="text-[11px] text-red-600 hover:text-red-800 flex items-center gap-1 cursor-pointer"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                      <span>Xóa ảnh</span>
+                    </button>
+                  )}
+                </div>
+
+                {imageError && (
+                  <div className="p-2 rounded bg-red-50 border border-red-200 text-red-700 text-[11px] flex items-center gap-2">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    <span>{imageError}</span>
+                  </div>
+                )}
+
+                {/* Upload Button + File Input */}
                 <input
-                  type="url"
-                  value={newPost.imageUrl}
-                  onChange={(e) => setNewPost({ ...newPost, imageUrl: e.target.value })}
-                  placeholder="https://... hoặc đường dẫn ảnh tư liệu"
-                  className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded focus:outline-none focus:border-army-gold"
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={handleFileSelect}
+                  className="hidden"
                 />
+
+                <div className="flex flex-col sm:flex-row items-stretch gap-2">
+                  <button
+                    type="button"
+                    onClick={() => !uploadingImage && fileInputRef.current?.click()}
+                    disabled={uploadingImage}
+                    className="px-3 py-2 bg-army-maroon hover:bg-army-dark text-army-gold font-serif font-bold text-xs uppercase tracking-wider rounded border border-army-gold/30 flex items-center justify-center gap-2 transition-colors cursor-pointer disabled:opacity-50 shrink-0"
+                  >
+                    {uploadingImage ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin text-army-gold" />
+                        <span>Đang tải... {uploadProgress > 0 ? `${uploadProgress}%` : ''}</span>
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="w-4 h-4" />
+                        <span>Chọn ảnh từ máy</span>
+                      </>
+                    )}
+                  </button>
+
+                  <div className="flex-1">
+                    <input
+                      type="text"
+                      value={newPost.imageUrl}
+                      onChange={(e) => setNewPost({ ...newPost, imageUrl: e.target.value })}
+                      placeholder="Hoặc dán URL ảnh (https://...)"
+                      className="w-full h-full px-3 py-2 bg-gray-50 border border-gray-200 rounded focus:outline-none focus:border-army-gold text-xs"
+                    />
+                  </div>
+                </div>
+
+                {/* Image Preview */}
                 {newPost.imageUrl && (
-                  <div className="mt-2 h-28 rounded bg-gray-100 overflow-hidden border border-gray-200">
+                  <div className="mt-2 relative h-36 rounded bg-gray-100 overflow-hidden border border-gray-200 group">
                     <img
                       src={newPost.imageUrl}
                       alt="Preview"
@@ -569,6 +671,16 @@ export function BattalionFormPage() {
                         e.currentTarget.src = '/logo.png';
                       }}
                     />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="px-2.5 py-1 rounded bg-white/90 hover:bg-white text-gray-800 text-xs font-semibold flex items-center gap-1 shadow cursor-pointer"
+                      >
+                        <RefreshCw className="w-3.5 h-3.5" />
+                        <span>Thay ảnh khác</span>
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>

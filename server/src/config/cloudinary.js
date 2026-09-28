@@ -3,4 +3,5 @@ export const CLOUDINARY_FOLDERS = Object.freeze({
   news: "political-officer-school/news",
   activities: "political-officer-school/activities",
   gallery: "political-officer-school/gallery",
+  battalions: "political-officer-school/battalions",
 });
