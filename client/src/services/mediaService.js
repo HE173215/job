@@ -11,13 +11,13 @@ export const mediaService = {
    */
   async uploadImage(file, folder = 'history', onProgress = null) {
     // 1. Kiểm tra định dạng và dung lượng file cơ bản tại client
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
-    if (!allowedTypes.includes(file.type)) {
-      throw new Error('Định dạng ảnh không hợp lệ. Chỉ chấp nhận file JPG, PNG, hoặc WEBP.');
+    const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/avif'];
+    if (!allowedMimeTypes.includes(file.type)) {
+      throw new Error('Định dạng ảnh không hợp lệ. Chỉ chấp nhận file JPG, PNG, WEBP, hoặc AVIF.');
     }
 
-    const maxSize = 10 * 1024 * 1024; // 10MB
-    if (file.size > maxSize) {
+    const defaultMaxSize = 10 * 1024 * 1024; // 10MB mặc định
+    if (file.size > defaultMaxSize) {
       throw new Error('Dung lượng ảnh vượt quá giới hạn 10MB.');
     }
 
@@ -29,15 +29,40 @@ export const mediaService = {
         throw new Error('Không thể nhận chữ ký tải ảnh từ máy chủ.');
       }
 
-      const { timestamp, signature, apiKey, cloudName, folder: targetFolder } = signatureRes.data;
+      const {
+        timestamp,
+        signature,
+        apiKey,
+        cloudName,
+        folder: targetFolder,
+        allowedFormats,
+        uploadPreset,
+        maxBytes,
+      } = signatureRes.data;
+
+      // Kiểm tra dung lượng theo maxBytes từ server nếu có
+      if (maxBytes && file.size > maxBytes) {
+        const maxMB = Math.round(maxBytes / (1024 * 1024));
+        throw new Error(`Dung lượng ảnh vượt quá giới hạn ${maxMB}MB.`);
+      }
 
       // 3. Chuẩn bị FormData để upload trực tiếp lên Cloudinary
+      // Lưu ý: Bất kỳ tham số nào nằm trong chữ ký đều bắt buộc phải gửi kèm trong FormData
       const formData = new FormData();
       formData.append('file', file);
       formData.append('api_key', apiKey);
       formData.append('timestamp', timestamp);
       formData.append('signature', signature);
       formData.append('folder', targetFolder);
+
+      if (allowedFormats) {
+        const formatsStr = Array.isArray(allowedFormats) ? allowedFormats.join(',') : allowedFormats;
+        formData.append('allowed_formats', formatsStr);
+      }
+
+      if (uploadPreset) {
+        formData.append('upload_preset', uploadPreset);
+      }
 
       // 4. Gửi request trực tiếp tới Cloudinary API
       // Dùng axios riêng không kèm withCredentials (vì gửi sang Cloudinary)
